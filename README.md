@@ -1,4 +1,6 @@
-# Kindle Bluetooth Keepalive for Pixel Buds
+# Kindle Bluetooth Keepalive
+
+ ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) ![Kindle](https://img.shields.io/badge/kindle-FF9900?style=for-the-badge&logo=amazon&logoColor=white) ![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge) ![Bluetooth](https://img.shields.io/badge/bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white) ![Upstart](https://img.shields.io/badge/upstart-333333?style=for-the-badge&logo=linux&logoColor=white)
 
 Keep your Bluetooth headphones connected while reading on Kindle, without disconnections caused by screen saver or suspend mode.
 
