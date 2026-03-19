@@ -170,7 +170,7 @@ initctl status btkeepalive
 
 ## Acknowledgements
 
-A big thank you to the developers whose tools made this possible:
+A big thank you to the developers:
 
 - [**@notmarek**](https://github.com/notmarek) — for [kindle-usbnetlite](https://github.com/notmarek/kindle-usbnetlite), a lightweight SSH solution for Kindle that makes everything possible.
 - [**@kbarni**](https://github.com/kbarni) — for [KinAMP](https://github.com/kbarni/KinAMP), a native music player for Kindle that actually works beautifully on e-ink displays.
