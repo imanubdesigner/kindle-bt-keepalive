@@ -4,14 +4,15 @@
 
 Keep your Bluetooth headphones connected while reading on Kindle, without disconnections caused by screen saver or suspend mode.
 
-Tested on **Kindle Paperwhite 11th Generation, firmware 5.18.5.0.1**.
+Tested on **Kindle Signature 11th Generation, firmware 5.18.5.0.1**.
 
 ---
 
 ## Prerequisites
 
 - Jailbroken Kindle
-- SSH access or KTerm installed
+- SSH access via [kindle-usbnetlite](https://github.com/notmarek/kindle-usbnetlite) by [@notmarek](https://github.com/notmarek), or KTerm installed
+- [KinAMP](https://github.com/kbarni/KinAMP) by [@kbarni](https://github.com/kbarni) — native music player for Kindle (optional, but recommended if you want to play audio)
 - Bluetooth headphones already paired with the Kindle at least once via the UI (Settings → Bluetooth)
 
 ---
@@ -164,3 +165,12 @@ initctl status btkeepalive
 - The `deferSuspend` value is set in seconds. `7200` = 2 hours. You can adjust it if needed.
 - `lipc-set-prop com.lab126.btfd Connect` is safe to call even when already connected — the Bluetooth daemon handles it gracefully.
 - Logs are saved to `/mnt/us/yourname/log/btkeepalive` and are useful for diagnosing any remaining disconnection issues.
+
+---
+
+## Acknowledgements
+
+A big thank you to the developers whose tools made this possible:
+
+- [**@notmarek**](https://github.com/notmarek) — for [kindle-usbnetlite](https://github.com/notmarek/kindle-usbnetlite), a lightweight SSH solution for Kindle that makes everything possible.
+- [**@kbarni**](https://github.com/kbarni) — for [KinAMP](https://github.com/kbarni/KinAMP), a native music player for Kindle that actually works beautifully on e-ink displays.
