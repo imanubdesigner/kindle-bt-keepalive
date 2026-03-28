@@ -2,7 +2,7 @@
 
 This variant is designed for users who want to use the Kindle as a **dedicated audio player**, keeping the Bluetooth connection alive and preventing deep sleep during playback — even with the cover closed.
 
-Tested on **Kindle Signature 11th Generation, firmware 5.18.5.0.1** — audio playback continued uninterrupted for 10+ minutes with the cover closed and the screen off.
+Tested on **Kindle Paperwhite 11th Generation, firmware 5.18.5.0.1** — audio playback continued uninterrupted for 10+ minutes with the cover closed and the screen off.
 
 > ⚠️ This variant intercepts the Kindle's suspend cycle to keep it awake during playback. This has a noticeable impact on battery life compared to reading-mode. Only use this variant when you need uninterrupted audio playback over long periods.
 
