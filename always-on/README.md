@@ -1,8 +1,10 @@
 # Always-On Mode — iPod Mode
 
-This variant is designed for users who want to use the Kindle as a **dedicated audio player**, keeping the Bluetooth connection alive and preventing deep sleep during playback.
+This variant is designed for users who want to use the Kindle as a **dedicated audio player**, keeping the Bluetooth connection alive and preventing deep sleep during playback — even with the cover closed.
 
-> ⚠️ This variant intercepts the Kindle's suspend cycle to keep it awake. This has a noticeable impact on battery life compared to reading-mode. Only use this variant when you need uninterrupted audio playback over long periods with the screen off.
+Tested on **Kindle Signature 11th Generation, firmware 5.18.5.0.1** — audio playback continued uninterrupted for 10+ minutes with the cover closed and the screen off.
+
+> ⚠️ This variant intercepts the Kindle's suspend cycle to keep it awake during playback. This has a noticeable impact on battery life compared to reading-mode. Only use this variant when you need uninterrupted audio playback over long periods.
 
 ---
 
@@ -13,19 +15,21 @@ The script listens to **two event sources simultaneously**:
 - `com.lab126.powerd` — power management events
 - `com.lab126.btfd` — Bluetooth events
 
-When the Kindle tries to go into deep sleep, it dispatches a `readyToSuspend` countdown. The script intercepts it and sets `deferSuspend 600` to delay the suspension by 10 minutes. When the BT disconnects, it reconnects automatically.
+When the Kindle tries to go into deep sleep, it dispatches a `readyToSuspend` countdown. The script intercepts it and sets `deferSuspend 600` to delay the suspension by 10 minutes — at which point the Kindle will try again, and the script will defer again, indefinitely.
 
-Both battery level and charging state are checked before acting — if the battery is too low and the device is not charging, the Kindle is allowed to sleep normally.
+When the BT disconnects, it reconnects automatically.
+
+Both battery level and charging state are checked before acting. Below `THRESHOLD` and not charging, the Kindle is allowed to sleep normally and reconnection is skipped. You can adjust `THRESHOLD` to your preference — the default is `25` (%).
 
 | What | Why |
 |------|-----|
 | `printf ... \| lipc-wait-event -l` | Listens to two event sources simultaneously |
 | `readyToSuspend` | Fires when the Kindle is about to enter deep sleep |
-| `deferSuspend 600` | Delays deep sleep by 10 minutes when intercepted |
+| `deferSuspend 600` | Delays deep sleep by 10 minutes, renewed on each attempt |
 | `Disconnect_Result` | Fires every time the Kindle drops the BT connection |
 | `sleep 2` | Gives the Kindle a moment before attempting reconnection |
 | `lipc-set-prop Connect` | Immediately reconnects the Bluetooth device |
-| `THRESHOLD` | Skips both defer and reconnect if battery is low |
+| `THRESHOLD=25` | Below this battery %, allows sleep and skips reconnect |
 | `start on started lab126` | Auto-starts reliably at boot with the main Kindle job |
 | `respawn` | Restarts the script automatically if it exits unexpectedly |
 
@@ -74,8 +78,10 @@ MAC="XX:XX:XX:XX:XX:XX"   # ← replace with your MAC address
 # Log file path
 LOGFILE="/mnt/us/yourname/log/btkeepalive"   # ← replace yourname
 
-# Minimum battery level to attempt reconnection and defer suspend
-THRESHOLD=97
+# Minimum battery level to attempt reconnection and defer suspend.
+# Below this threshold and not charging, the Kindle is allowed to sleep
+# and reconnection is skipped. Adjust this value to your preference.
+THRESHOLD=25
 
 echo "$(date) - ipod mode started" >> "$LOGFILE"
 
@@ -154,21 +160,9 @@ initctl status btkeepalive
 
 ---
 
-## Switching between modes
-
-If you want to switch to reading-mode temporarily:
-
-```sh
-initctl stop btkeepalive
-# replace btconnect.sh with the reading-mode version
-initctl start btkeepalive
-```
-
----
-
 ## Notes
 
-- `deferSuspend` is only set when the Kindle dispatches a `readyToSuspend` event — not at startup. This is the correct and most efficient approach, as confirmed by the Kindle's internal power management behavior.
-- If the battery drops below `THRESHOLD` and the device is not charging, the Kindle is allowed to sleep normally and reconnection is skipped.
+- `deferSuspend` is only set when the Kindle dispatches a `readyToSuspend` event — not at startup. This is the correct approach as confirmed by the Kindle's internal power management.
+- The default `THRESHOLD` is `25%`. Feel free to adjust it — for example, `20` if you want playback to continue until the battery is nearly empty, or `50` if you prefer to be more conservative.
+- When the battery drops below `THRESHOLD` and the device is not charging, the Kindle goes into deep sleep normally and reconnection is skipped.
 - Logs are saved to `/mnt/us/yourname/log/btkeepalive`.
-- This mode has **not** been tested with the screen completely off for extended periods — results may vary depending on firmware version.

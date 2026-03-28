@@ -6,8 +6,10 @@ MAC="XX:XX:XX:XX:XX:XX"   # ← replace with your MAC address
 # Log file path
 LOGFILE="/mnt/us/yourname/log/btkeepalive"   # ← replace yourname
 
-# Minimum battery level to attempt reconnection and defer suspend
-THRESHOLD=97
+# Minimum battery level to attempt reconnection and defer suspend.
+# Below this threshold and not charging, the Kindle is allowed to sleep
+# and reconnection is skipped. Adjust this value to your preference.
+THRESHOLD=25
 
 echo "$(date) - ipod mode started" >> "$LOGFILE"
 
