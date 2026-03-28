@@ -4,7 +4,7 @@
 
 Keep your Bluetooth headphones connected on a jailbroken Kindle, without unexpected disconnections caused by screen saver or suspend mode.
 
-Tested on **Kindle Signature 11th Generation, firmware 5.18.5.0.1**.
+Tested on **Kindle Paperwhite 11th Generation, firmware 5.18.5.0.1**.
 
 ---
 
