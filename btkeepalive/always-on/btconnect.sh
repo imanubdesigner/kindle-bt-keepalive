@@ -31,7 +31,7 @@ echo "$(date) - sleep prevention set (24h)" >> "$LOGFILE"
 while :; do
   BATT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null)
   CHARGING=$(lipc-get-prop com.lab126.powerd isCharging 2>/dev/null)
-  if [ "$BATT" -lt "${THRESHOLD:-20}" ] && [ "$CHARGING" != "1" ] 2>/dev/null; then
+  if [ "$BATT" -lt "${THRESHOLD:-20}" ] 2>/dev/null && [ "$CHARGING" != "1" ] 2>/dev/null; then
     lipc-set-prop com.lab126.powerd deferSuspend 0 2>/dev/null
     echo "$(date) - battery at ${BATT}%, sleep prevention removed, exiting" >> "$LOGFILE"
     exit 0

@@ -1,13 +1,21 @@
-<p align="center">
+<p align="center" style="padding-bottom: 24px;">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo/kindle-bt-keepalive-logo-dark.png">
-    <img alt="kindle-bt-keepalive logo" src="assets/logo/kindle-bt-keepalive-logo.png" width="452">
+    <img alt="kindle-bt-keepalive logo" src="assets/logo/kindle-bt-keepalive-logo.png" width="300">
   </picture>
 </p>
 
-![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) ![Kindle](https://img.shields.io/badge/kindle-FF9900?style=for-the-badge&logo=amazon&logoColor=white) ![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge) ![Bluetooth](https://img.shields.io/badge/bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white) ![KUAL](https://img.shields.io/badge/KUAL-4A90E2?style=for-the-badge&logo=amazon&logoColor=white) ![Upstart](https://img.shields.io/badge/upstart-333333?style=for-the-badge&logo=linux&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black">
+  <img src="https://img.shields.io/badge/kindle-FF9900?style=for-the-badge&logo=amazon&logoColor=white">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge">
+  <img src="https://img.shields.io/badge/bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white">
+  <img src="https://img.shields.io/badge/KUAL-4A90E2?style=for-the-badge&logo=amazon&logoColor=white">
+  <img src="https://img.shields.io/badge/KOReader-FF6600?style=for-the-badge&logo=koreader&logoColor=white">
+  <img src="https://img.shields.io/badge/upstart-333333?style=for-the-badge&logo=linux&logoColor=white">
+</p>
 
-Keep your Bluetooth headphones connected on a jailbroken Kindle, without unexpected disconnections caused by screen saver or suspend mode. Features a **KUAL integration** for point-and-click control directly from your Kindle.
+Keep your Bluetooth headphones connected on a jailbroken Kindle, without unexpected disconnections caused by screen saver or suspend mode. Features both **KUAL** and **KOReader** integration for point-and-click control directly from your Kindle.
 
 Tested on **Kindle Paperwhite 11th Generation, firmware 5.18.5.0.1**.
 
@@ -37,12 +45,13 @@ This project was born out of a necessity to preserve that very atmosphere. I dis
 ## Features ⚡
 
 - **KUAL Menu Integration**: No more SSH or KTerm needed after setup
-- **Get MAC Address**: One-click MAC detection via KUAL menu
+- **KOReader Plugin**: Full menu access inside KOReader, no exit required
+- **Get MAC Address**: One-click MAC detection via KUAL or KOReader
 - **Current Mode**: Check active mode with one click
 - **Three Modes**: Reading Mode, Always On, and Default (Disable)
 - **Persistent**: Settings survive reboots via Upstart
 - **Zero Configuration**: Single config file with MAC address
-- **Pillow Notifications**: Visual feedback on mode changes
+- **Pillow & KOReader Notifications**: Visual feedback on mode changes
 
 ---
 
@@ -90,6 +99,9 @@ kindle-bt-keepalive/
 │       ├── set_reading.sh
 │       ├── set_always_on.sh
 │       └── set_default.sh
+├── btkeepalive.koplugin/      ← Copy to /mnt/us/koreader/plugins/
+│   ├── _meta.lua              ← KOReader plugin metadata
+│   └── main.lua               ← Menu & action handlers
 └── assets/                   ← Logos and screenshots
     ├── logo/
     └── screenshots/
@@ -100,6 +112,7 @@ kindle-bt-keepalive/
 ## Prerequisites
 
 - Jailbroken Kindle with [KUAL](https://wiki.mobileread.com/wiki/KUAL) installed
+- [KOReader](https://github.com/koreader/koreader) (optional, only needed for the KOReader plugin)
 - SSH access via [kindle-usbnetlite](https://github.com/notmarek/kindle-usbnetlite) or KTerm (only for [Usage Verification](#usage-verification))
 - [KinAMP](https://github.com/kbarni/KinAMP) by [@kbarni](https://github.com/kbarni) — native music player (optional, but recommended)
 
@@ -117,9 +130,13 @@ kindle-bt-keepalive/
 4. On your Kindle drive, copy the `btkeepalive/` folder to `/mnt/us/`
 5. On your Kindle drive, copy the `extensions/` folder to `/mnt/us/`
 
-> **Windows users**: Simply copy or drag-and-drop the `btkeepalive/` and `extensions/` folders from the extracted ZIP directly to the root of your Kindle drive in Explorer (usually named "Kindle").
+> **Windows users**: Simply copy or drag-and-drop the folders from the extracted ZIP directly to the root of your Kindle drive in Explorer (usually named "Kindle").
 
-### 2. Configure Your Bluetooth Device
+### 2. Copy KOReader Plugin (optional)
+
+If you use [KOReader](https://github.com/koreader/koreader), copy the `btkeepalive.koplugin/` folder to `/mnt/us/koreader/plugins/`. Restart KOReader and find **Bluetooth Keepalive** in the **Tools** menu.
+
+### 3. Configure Your Bluetooth Device
 
 Edit `/mnt/us/btkeepalive/btkeepalive.conf` and replace the MAC address.
 
@@ -142,7 +159,7 @@ Edit `/mnt/us/btkeepalive/btkeepalive.conf` and replace the MAC address.
 # Example: MAC="75-c8-28-1a-12-b2"
 ```
 
-### 3. Launch KUAL
+### 4. Launch KUAL
 
 1. Open **KUAL** on your Kindle
 2. You'll see **Bluetooth Keepalive** in the menu
@@ -153,6 +170,15 @@ Edit `/mnt/us/btkeepalive/btkeepalive.conf` and replace the MAC address.
 7. A notification confirms the mode change
 
 > **Tip**: You can verify the service is running with the [Usage Verification](#usage-verification) steps.
+
+### 5. Using the KOReader Plugin (optional)
+
+If you use KOReader, you can control Bluetooth Keepalive without leaving your book:
+
+1. Open **KOReader**
+2. Tap **Tools → Bluetooth Keepalive**
+3. All the same menu items as KUAL are available: **Get MAC Address**, **Current Mode**, **Reading Mode**, **Always On**, **Default (Disable)**
+4. Mode changes are confirmed with a KOReader popup notification
 
 ---
 
@@ -175,7 +201,7 @@ LOGFILE="/mnt/us/btkeepalive/log/btkeepalive.log"
 
 ## How It Works
 
-1. **KUAL Menu Click** → Calls `set_reading.sh` or `set_always_on.sh`
+1. **KUAL Menu Click** or **KOReader Plugin** → Calls `set_reading.sh` or `set_always_on.sh`
 2. **Script Actions**:
    - Writes mode to `config.conf`
    - Installs Upstart job for boot persistence
@@ -208,6 +234,7 @@ tail -f /mnt/us/btkeepalive/log/btkeepalive.log
 - [**@notmarek**](https://github.com/notmarek) — for [kindle-usbnetlite](https://github.com/notmarek/kindle-usbnetlite), a lightweight SSH solution for Kindle.
 - [**@kbarni**](https://github.com/kbarni) — for [KinAMP](https://github.com/kbarni/KinAMP), a native music player for Kindle that works beautifully on e-ink displays.
 - [**KUAL Team**](https://wiki.mobileread.com/wiki/KUAL) — for the Kindle Unified Application Launcher.
+- [**KOReader Team**](https://github.com/koreader/koreader) — for the open-source document viewer and its extensible plugin system.
 
 ---
 

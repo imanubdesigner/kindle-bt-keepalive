@@ -18,7 +18,7 @@ grep -E '^\[([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\]$' "$CONFIG_FILE" | \
 LIST=""
 while read MAC; do
   NAME=$(grep -A 10 "^\[$MAC\]" "$CONFIG_FILE" | \
-         grep "^Name = " | cut -d= -f2- | sed 's/^ //')
+         grep "^Name = " | cut -d= -f2- | sed 's/^ *//')
   if [ -n "$NAME" ]; then
     SHORT_NAME=$(echo "$NAME" | cut -c1-35)
     LIST="$LIST$MAC ($SHORT_NAME)\n"

@@ -23,4 +23,4 @@ done &
 
 lipc-set-prop com.lab126.btfd Connect "$MAC" 2>/dev/null
 
-wait
+wait $!

@@ -28,8 +28,9 @@ echo "reading" > "$CONFIG_FILE"
 echo "$(date) - [set_reading] config set to: reading" >> "$LOGFILE"
 
 # --- 2. Install/reinstall Upstart job (boot persistence) ---
-mntroot rw 2>/dev/null
-cat > "$UPSTART_CONF" << 'EOF'
+if ! grep -q "btkeepalive_wrapper" "$UPSTART_CONF" 2>/dev/null; then
+    mntroot rw 2>/dev/null
+    cat > "$UPSTART_CONF" << 'EOF'
 start on started lab126
 stop on stopping lab126
 
@@ -40,8 +41,11 @@ script
     exec /bin/sh /mnt/us/btkeepalive/bin/btkeepalive_wrapper.sh
 end script
 EOF
-mntroot ro 2>/dev/null
-echo "$(date) - [set_reading] Upstart job installed" >> "$LOGFILE"
+    mntroot ro 2>/dev/null
+    echo "$(date) - [set_reading] Upstart job installed" >> "$LOGFILE"
+else
+    echo "$(date) - [set_reading] Upstart job already up-to-date, skipped" >> "$LOGFILE"
+fi
 initctl reload-configuration 2>/dev/null || true
 
 # --- 3. Stop existing service and processes cleanly ---
