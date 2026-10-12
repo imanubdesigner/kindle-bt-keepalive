@@ -7,5 +7,5 @@ return {
 Same menu as the KUAL extension: Reading Mode, Always On, and Default (Disable).]]),
     version = "2.4.0",
     author = "imanubdesigner",
-    url = "https://github.com/imanubdesigner/kindle-bt-keepalive",
+    url = "https://codeberg.org/imanubdesigner/kindle-bt-keepalive",
 }

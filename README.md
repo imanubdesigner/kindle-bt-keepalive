@@ -124,7 +124,7 @@ kindle-bt-keepalive/
 
 ### 1. Download and Copy Files
 
-1. Download the project: **[Clone or Download ZIP](https://github.com/imanubdesigner/kindle-bt-keepalive/releases)** from GitHub
+1. Download the project: **[Clone or Download ZIP](https://codeberg.org/imanubdesigner/kindle-bt-keepalive/releases)** from Codeberg
 2. Extract the ZIP on your computer (or clone the repository)
 3. Connect your Kindle via USB
 4. On your Kindle drive, copy the `btkeepalive/` folder to `/mnt/us/`
@@ -248,7 +248,7 @@ The author **disclaims all responsibility** for any potential hardware or softwa
 
 ## 📄 License
 
-This project is licensed under the [MIT License](https://github.com/imanubdesigner/kindle-bt-keepalive?tab=MIT-1-ov-file#readme) - see the LICENSE file for details.
+This project is licensed under the [MIT License](https://codeberg.org/imanubdesigner/kindle-bt-keepalive#readme) - see the LICENSE file for details.
 
 ---
 
