@@ -1,0 +1,10 @@
+# Runtime state created on the Kindle (never part of the source tree)
+btkeepalive/log/
+*.log
+
+# Mode config written by set_reading.sh / set_always_on.sh / set_default.sh
+# (the user-facing template is btkeepalive/btkeepalive.conf, which IS tracked)
+config.conf
+
+# Release archives
+*.zip
