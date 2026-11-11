@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="headband-grad-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3fb950" />
+      <stop offset="50%" stop-color="#7ee787" />
+      <stop offset="100%" stop-color="#3fb950" />
+    </linearGradient>
+  </defs>
+
+  <!-- HEADPHONE ENCLOSURE (Hovering high above Kindle, generous clearance) -->
+  <path d="M 76 263 A 180 192 0 0 1 436 263" 
+        fill="none" stroke="url(#headband-grad-dark)" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- PIVOTS & EARCUPS -->
+  <line x1="76" y1="257" x2="76" y2="275" stroke="#3fb950" stroke-width="8" stroke-linecap="round"/>
+  <rect x="60" y="273" width="32" height="76" rx="16" fill="#3fb950"/>
+  <rect x="66" y="281" width="6" height="60" rx="3" fill="#7ee787" opacity="0.6"/>
+
+  <line x1="436" y1="257" x2="436" y2="275" stroke="#3fb950" stroke-width="8" stroke-linecap="round"/>
+  <rect x="420" y="273" width="32" height="76" rx="16" fill="#3fb950"/>
+  <rect x="440" y="281" width="6" height="60" rx="3" fill="#7ee787" opacity="0.6"/>
+
+  <!-- KINDLE TABLET SILHOUETTE -->
+  <!-- Outer Bezel -->
+  <rect x="144" y="155" width="224" height="286" rx="24" 
+        fill="none" stroke="#f0f6fc" stroke-width="13" stroke-linejoin="round"/>
+  <!-- Kindle E-Ink Screen Inset -->
+  <rect x="165" y="183" width="182" height="212" rx="10" 
+        fill="none" stroke="#f0f6fc" stroke-width="4.5" opacity="0.25"/>
+  <!-- Kindle Chin Indicator -->
+  <line x1="232" y1="418" x2="280" y2="418" stroke="#f0f6fc" stroke-width="6.5" stroke-linecap="round"/>
+
+  <!-- AUTHENTIC BLUETOOTH RUNE (45-degree bindrune, centered) -->
+  <path d="M 234 308 L 278 264 L 256 242 L 256 330 L 278 308 L 234 264" 
+        fill="none" stroke="#3fb950" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- SIGNAL / CONNECTION ARCS (~38px breathing room from screen border) -->
+  <!-- Left Inner Wave -->
+  <path d="M 215 271 A 19 19 0 0 0 215 301" 
+        fill="none" stroke="#f0f6fc" stroke-width="6.5" stroke-linecap="round"/>
+  <!-- Left Outer Wave -->
+  <path d="M 200 260 A 32 32 0 0 0 200 312" 
+        fill="none" stroke="#f0f6fc" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Right Inner Wave -->
+  <path d="M 297 271 A 19 19 0 0 1 297 301" 
+        fill="none" stroke="#f0f6fc" stroke-width="6.5" stroke-linecap="round"/>
+  <!-- Right Outer Wave -->
+  <path d="M 312 260 A 32 32 0 0 1 312 312" 
+        fill="none" stroke="#f0f6fc" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+</svg>

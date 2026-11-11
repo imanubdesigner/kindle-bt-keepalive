@@ -1,11 +1,9 @@
-local _ = require("gettext")
-
 return {
     name = "btkeepalive",
     fullname = _("Bluetooth Keepalive"),
-    description = _([[Control Bluetooth Keepalive modes directly from KOReader.
+    description = _([[Keep your Bluetooth headphones connected on your Kindle.
 Same menu as the KUAL extension: Reading Mode, Always On, and Default (Disable).]]),
-    version = "2.4.0",
+    version = "3.0.0",
     author = "imanubdesigner",
-    url = "https://codeberg.org/imanubdesigner/kindle-bt-keepalive",
+    url = "https://github.com/imanubdesigner/kindle-bt-keepalive",
 }

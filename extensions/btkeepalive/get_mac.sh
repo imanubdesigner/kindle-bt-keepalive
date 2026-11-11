@@ -1,37 +1,42 @@
 #!/bin/sh
-
 # Get paired Bluetooth device MAC addresses and show via Pillow notification.
-# Displays up to the last 3 paired devices (most recently paired) with names.
+# Displays up to the last 3 paired devices with sanitized names.
 
-CONFIG_FILE="/var/local/zbluetooth/bt_config.conf"
+COMMON="/mnt/us/btkeepalive/bin/common.sh"
+[ -f "$COMMON" ] && . "$COMMON" || . "$(dirname "$0")/../../btkeepalive/bin/common.sh"
+
+CONFIG_FILE="${SYSTEM_BT_CONF:-/var/local/zbluetooth/bt_config.conf}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
-  lipc-set-prop com.lab126.pillow pillowAlert \
-    '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"No paired devices found. Pair via Settings -> Bluetooth first."}]}}'
+  notify "BT Keepalive" "No paired devices found. Pair via Settings -> Bluetooth first."
   exit 1
 fi
 
-# Extract last 3 paired device MACs (most recently paired)
-grep -E '^\[([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\]$' "$CONFIG_FILE" | \
-  tail -3 | tr -d '[]' > /tmp/btkeepalive_macs.txt
+# Parse config file using awk to safely isolate MACs and Names per section
+DEVICES=$(awk '
+  /^\[([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\]$/ {
+    if (mac != "") {
+      printf "%s%s\n", mac, (name != "" ? " (" name ")" : "")
+    }
+    mac = substr($0, 2, length($0) - 2)
+    name = ""
+  }
+  /^Name = / && mac != "" {
+    name = substr($0, 8)
+    gsub(/["\\]/, "", name)
+    name = substr(name, 1, 30)
+  }
+  END {
+    if (mac != "") {
+      printf "%s%s\n", mac, (name != "" ? " (" name ")" : "")
+    }
+  }
+' "$CONFIG_FILE" | tail -3)
 
-LIST=""
-while read MAC; do
-  NAME=$(grep -A 10 "^\[$MAC\]" "$CONFIG_FILE" | \
-         grep "^Name = " | cut -d= -f2- | sed 's/^ *//')
-  if [ -n "$NAME" ]; then
-    SHORT_NAME=$(echo "$NAME" | cut -c1-35)
-    LIST="$LIST$MAC ($SHORT_NAME)\n"
-  else
-    LIST="$LIST$MAC\n"
-  fi
-done < /tmp/btkeepalive_macs.txt
-rm -f /tmp/btkeepalive_macs.txt
-
-if [ -z "$LIST" ]; then
-  lipc-set-prop com.lab126.pillow pillowAlert \
-    '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"No paired devices found. Pair via Settings -> Bluetooth first."}]}}'
+if [ -z "$DEVICES" ]; then
+  notify "BT Keepalive" "No paired devices found. Pair via Settings -> Bluetooth first."
 else
-  lipc-set-prop com.lab126.pillow pillowAlert \
-    '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"Paired devices:\n'"$LIST"'"}]}}'
+  # Format multi-line list for notification
+  FORMATTED=$(echo "$DEVICES" | tr '\n' ',' | sed 's/,$//' | sed 's/,/ | /g')
+  notify "BT Keepalive" "Paired devices: $FORMATTED"
 fi

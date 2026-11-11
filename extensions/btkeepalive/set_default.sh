@@ -1,50 +1,42 @@
 #!/bin/sh
 # Default (Disable) Mode:
-#   1. Writes "default" to config.conf (persists across reboots)
-#   2. Stops Upstart service FIRST (prevents respawn fighting pkill)
-#   3. Kills any leftover processes
-#   4. Removes the Upstart job file (rw → delete → ro), clean system restore
-#   5. Shows a Pillow notification to confirm
+#   1. Releases power deferrals immediately
+#   2. Writes "default" to config.conf
+#   3. Stops Upstart service and kills daemon processes
+#   4. Removes the Upstart job and restores read-only filesystem
+#   5. Alerts user
 
-BASE_DIR="/mnt/us/btkeepalive"
-CONFIG_FILE="$BASE_DIR/config.conf"
-UPSTART_CONF="/etc/upstart/btkeepalive.conf"
+COMMON="/mnt/us/btkeepalive/bin/common.sh"
+[ -f "$COMMON" ] && . "$COMMON" || . "$(dirname "$0")/../../btkeepalive/bin/common.sh"
+
 LOGFILE="$BASE_DIR/log/wrapper.log"
-
-# Ensure log dir exists
 mkdir -p "$BASE_DIR/log"
+rotate_log "$LOGFILE" 256
 
 # Release any active sleep deferral from Always On mode immediately
 lipc-set-prop com.lab126.powerd deferSuspend 0 2>/dev/null
 echo "$(date) - [set_default] sleep prevention released" >> "$LOGFILE"
 
-# --- 1. Persist mode ---
+# Persist mode
 echo "default" > "$CONFIG_FILE"
 echo "$(date) - [set_default] config set to: default" >> "$LOGFILE"
 
-# --- 2. Stop Upstart service BEFORE pkill ---
-# This prevents Upstart respawn from restarting the process we're about to kill
+# Stop Upstart service BEFORE pkill (prevents respawn fighting pkill)
 initctl stop btkeepalive 2>/dev/null || true
-sleep 1
 
-# --- 3. Kill any leftover processes ---
+# Kill any leftover processes
 pkill -f "btconnect.sh" 2>/dev/null || true
 pkill -f "btkeepalive_wrapper.sh" 2>/dev/null || true
 echo "$(date) - [set_default] all keepalive processes stopped" >> "$LOGFILE"
 
-# --- 4. Remove Upstart job and restore read-only root ---
-# The Upstart conf is on the system partition (read-only by default).
-# We temporarily remount rw, delete the file, then restore ro.
+# Remove Upstart job and restore read-only root
 if [ -f "$UPSTART_CONF" ]; then
-    mntroot rw 2>/dev/null
+  if mntroot rw 2>/dev/null; then
     rm -f "$UPSTART_CONF"
     initctl reload-configuration 2>/dev/null || true
     mntroot ro 2>/dev/null
     echo "$(date) - [set_default] Upstart job removed, root restored to ro" >> "$LOGFILE"
-else
-    echo "$(date) - [set_default] Upstart job not present, nothing to remove" >> "$LOGFILE"
+  fi
 fi
 
-# --- 5. Notify user ---
-lipc-set-prop com.lab126.pillow pillowAlert \
-  '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"Disabled (default mode)"}]}}'
+notify "BT Keepalive" "Disabled (default mode)"

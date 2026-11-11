@@ -59,10 +59,12 @@ function BTKeepalive:getMACAddress()
         if mac then
             current_mac = mac
             table.insert(macs, mac)
+            names[current_mac] = nil -- Reset name for this section
         elseif current_mac then
             local name = line:match("^Name%s*=%s*(.+)$")
-            if name then
-                names[current_mac] = name
+            if name and not names[current_mac] then
+                -- Sanitize quotes and control characters
+                names[current_mac] = name:gsub('["\\]', ""):sub(1, 30)
             end
         end
     end
@@ -80,7 +82,7 @@ function BTKeepalive:getMACAddress()
     for i = start, #macs do
         local mac = macs[i]
         local name = names[mac]
-        if name then
+        if name and name ~= "" then
             table.insert(lines, mac .. " (" .. name .. ")")
         else
             table.insert(lines, mac)
@@ -96,7 +98,8 @@ function BTKeepalive:getCurrentMode()
     local f = io.open("/mnt/us/btkeepalive/config.conf", "r")
     if not f then
         UIManager:show(InfoMessage:new{
-            text = _("Config file missing.\nPlease run setup first."),
+            text = _("Current Mode: Disabled (Not configured yet)\nSelect Reading Mode or Always On to activate."),
+            timeout = 3,
         })
         return
     end
@@ -104,9 +107,17 @@ function BTKeepalive:getCurrentMode()
     local mode = f:read("*l")
     f:close()
 
+    local is_running = os.execute("pgrep -f btconnect.sh >/dev/null 2>&1") == 0
+    local status_suffix = ""
+    if is_running then
+        status_suffix = _(" (Active)")
+    elseif mode ~= "default" then
+        status_suffix = _(" (Stopped)")
+    end
+
     local mode_map = {
-        reading = _("Reading Mode"),
-        ["always-on"] = _("Always On Mode"),
+        reading = _("Reading Mode") .. status_suffix,
+        ["always-on"] = _("Always On Mode") .. status_suffix,
         default = _("Default (Disabled)"),
     }
     local display = mode_map[mode]
@@ -130,17 +141,27 @@ function BTKeepalive:setDefault()
 end
 
 function BTKeepalive:runShell(script, msg)
-    if not io.open(script, "r") then
+    local f = io.open(script, "r")
+    if not f then
         UIManager:show(InfoMessage:new{
             text = _("Script not found:\n") .. script,
         })
         return
     end
-    os.execute("/bin/sh " .. script .. " 2>/dev/null")
-    UIManager:show(InfoMessage:new{
-        text = msg,
-        timeout = 3,
-    })
+    f:close()
+
+    local res = os.execute("/bin/sh " .. script .. " 2>/dev/null")
+    if res == 0 or res == true then
+        UIManager:show(InfoMessage:new{
+            text = msg,
+            timeout = 3,
+        })
+    else
+        UIManager:show(InfoMessage:new{
+            text = _("Notice: executed ") .. script,
+            timeout = 3,
+        })
+    end
 end
 
 return BTKeepalive
