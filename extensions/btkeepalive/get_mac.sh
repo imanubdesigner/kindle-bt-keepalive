@@ -1,42 +1,16 @@
 #!/bin/sh
-# Get paired Bluetooth device MAC addresses and show via Pillow notification.
-# Displays up to the last 3 paired devices with sanitized names.
+# Show the last 3 paired Bluetooth devices with their MAC addresses.
 
-COMMON="/mnt/us/btkeepalive/bin/common.sh"
-[ -f "$COMMON" ] && . "$COMMON" || . "$(dirname "$0")/../../btkeepalive/bin/common.sh"
-
-CONFIG_FILE="${SYSTEM_BT_CONF:-/var/local/zbluetooth/bt_config.conf}"
-
-if [ ! -f "$CONFIG_FILE" ]; then
-  notify "BT Keepalive" "No paired devices found. Pair via Settings -> Bluetooth first."
+BTK_BASE="${BTK_BASE:-/mnt/us/btkeepalive}"
+if [ ! -f "$BTK_BASE/lib/common.sh" ]; then
+  lipc-set-prop com.lab126.pillow pillowAlert '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"btkeepalive folder not found. Copy it to /mnt/us/"}]}}' 2>/dev/null
   exit 1
 fi
+. "$BTK_BASE/lib/common.sh"
 
-# Parse config file using awk to safely isolate MACs and Names per section
-DEVICES=$(awk '
-  /^\[([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\]$/ {
-    if (mac != "") {
-      printf "%s%s\n", mac, (name != "" ? " (" name ")" : "")
-    }
-    mac = substr($0, 2, length($0) - 2)
-    name = ""
-  }
-  /^Name = / && mac != "" {
-    name = substr($0, 8)
-    gsub(/["\\]/, "", name)
-    name = substr(name, 1, 30)
-  }
-  END {
-    if (mac != "") {
-      printf "%s%s\n", mac, (name != "" ? " (" name ")" : "")
-    }
-  }
-' "$CONFIG_FILE" | tail -3)
-
-if [ -z "$DEVICES" ]; then
-  notify "BT Keepalive" "No paired devices found. Pair via Settings -> Bluetooth first."
-else
-  # Format multi-line list for notification
-  FORMATTED=$(echo "$DEVICES" | tr '\n' ',' | sed 's/,$//' | sed 's/,/ | /g')
-  notify "BT Keepalive" "Paired devices: $FORMATTED"
+OUT=$(/bin/sh "$BTK_BASE/bin/paired.sh")
+if [ -z "$OUT" ]; then
+  notify "No paired devices found.${NL}Pair via Settings -> Bluetooth first."
+  exit 1
 fi
+notify "Paired devices:${NL}$OUT"

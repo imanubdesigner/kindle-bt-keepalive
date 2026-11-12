@@ -1,45 +1,19 @@
 #!/bin/sh
-
 # Reading Mode
+#
+# Reconnects the headphones right after every Bluetooth disconnect. The Kindle
+# keeps its normal sleep behaviour (no wake lock), so a drop caused by sleeping
+# is repaired when the Kindle wakes up, not prevented.
 
-COMMON="/mnt/us/btkeepalive/bin/common.sh"
-[ -f "$COMMON" ] && . "$COMMON"
+BTK_BASE="${BTK_BASE:-$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)}"
+. "$BTK_BASE/lib/common.sh"
+BTK_TAG="reading"
+BTK_HOLD_LOCK=0
 
-CONF_FILE="/mnt/us/btkeepalive/btkeepalive.conf"
-if [ -f "$CONF_FILE" ]; then
-  . "$CONF_FILE"
-else
-  notify "BT Keepalive" "Config file missing. Copy btkeepalive.conf to /mnt/us/btkeepalive/"
-  exit 0
-fi
+trap 'exit 0' TERM INT HUP
+trap btk_cleanup EXIT
 
-LOGFILE="${LOGFILE:-/mnt/us/btkeepalive/log/btkeepalive.log}"
-mkdir -p "$(dirname "$LOGFILE")"
-rotate_log "$LOGFILE" 256
+require_config
+log "started (v$BTK_VERSION)"
 
-if ! validate_mac "$MAC"; then
-  echo "$(date) - [reading] error: MAC address '$MAC' invalid or not configured" >> "$LOGFILE"
-  notify "BT Keepalive" "Device MAC not configured. Use 'Get MAC Address' and edit btkeepalive.conf."
-  exit 0
-fi
-
-echo "$(date) - [reading] mode started (target: $MAC)" >> "$LOGFILE"
-
-# Listen for Bluetooth disconnect events without spawning grep subshells
-lipc-wait-event -m com.lab126.btfd "*" | while read -r EVENT; do
-  case "$EVENT" in
-    *Disconnect_Result*)
-      echo "$(date) - [reading] disconnect detected, reconnecting..." >> "$LOGFILE"
-      reconnect "$MAC" &
-      ;;
-  esac
-done &
-WAIT_PID=$!
-
-# Trap for graceful shutdown on EXIT, SIGINT, or SIGTERM
-trap 'kill $WAIT_PID 2>/dev/null; exit 0' EXIT INT TERM
-
-# Initial connection attempt with retry backoff
-reconnect "$MAC" &
-
-wait "$WAIT_PID"
+supervise_listener

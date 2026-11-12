@@ -28,6 +28,11 @@
           "name": "Default (Disable)",
           "priority": 5,
           "action": "/mnt/us/extensions/btkeepalive/set_default.sh"
+        },
+        {
+          "name": "Diagnostics",
+          "priority": 6,
+          "action": "/mnt/us/extensions/btkeepalive/diagnose.sh"
         }
       ]
     }

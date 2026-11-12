@@ -1,50 +1,22 @@
 #!/bin/sh
-# Wrapper script to start the correct mode on boot via Upstart.
-# Reads mode from /mnt/us/btkeepalive/config.conf and execs the
-# appropriate btconnect.sh. Called exclusively by the Upstart job.
+# Started at boot by the Upstart job: reads the saved mode and hands over to the
+# matching btconnect.sh (exec, so Upstart keeps tracking the same process).
 
-BIN_DIR="$(dirname "$0")"
-COMMON="$BIN_DIR/common.sh"
-[ -f "$COMMON" ] && . "$COMMON" || . "/mnt/us/btkeepalive/bin/common.sh"
+BTK_BASE="${BTK_BASE:-$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)}"
+. "$BTK_BASE/lib/common.sh"
+BTK_TAG="wrapper"
 
-LOGFILE="$BASE_DIR/log/wrapper.log"
-mkdir -p "$BASE_DIR/log"
-rotate_log "$LOGFILE" 256
-
-echo "$(date) - [wrapper] started" >> "$LOGFILE"
-
-# Read mode from config; default to disabled if file missing or value unknown
-if [ -f "$CONFIG_FILE" ]; then
-  read -r MODE < "$CONFIG_FILE"
-else
-  MODE="default"
-fi
-
-echo "$(date) - [wrapper] mode=$MODE" >> "$LOGFILE"
+log "started (v$BTK_VERSION)"
+MODE=$(btk_mode)
+log "mode=$MODE"
 
 case "$MODE" in
-  "reading"|"always-on")
-    # Verify btkeepalive.conf exists and MAC is valid before spawning daemon
-    if [ ! -f "$CONF_FILE" ]; then
-      echo "$(date) - [wrapper] error: $CONF_FILE missing, exiting cleanly" >> "$LOGFILE"
-      notify "BT Keepalive" "Config file missing. Copy btkeepalive.conf to /mnt/us/btkeepalive/"
-      exit 0
-    fi
-    . "$CONF_FILE"
-    if ! validate_mac "$MAC"; then
-      echo "$(date) - [wrapper] error: MAC address '$MAC' invalid or not set, exiting cleanly" >> "$LOGFILE"
-      notify "BT Keepalive" "Device MAC not configured. Use 'Get MAC Address' and edit btkeepalive.conf."
-      exit 0
-    fi
-
-    if [ "$MODE" = "reading" ]; then
-      exec /bin/sh "$READING_SCRIPT"
-    else
-      exec /bin/sh "$ALWAYS_ON_SCRIPT"
-    fi
-    ;;
+  reading)   exec /bin/sh "$BTK_BASE/reading-mode/btconnect.sh" ;;
+  always-on) exec /bin/sh "$BTK_BASE/always-on/btconnect.sh" ;;
   *)
-    echo "$(date) - [wrapper] default or disabled mode, stopping service" >> "$LOGFILE"
-    exit 0
+    # Idle instead of exiting: an exit would make Upstart respawn us in a loop.
+    log "mode '$MODE': nothing to do, idling"
+    trap 'exit 0' TERM INT HUP
+    while :; do nap 3600; done
     ;;
 esac

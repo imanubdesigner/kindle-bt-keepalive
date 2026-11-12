@@ -1,59 +1,58 @@
 #!/bin/sh
+# Always On Mode
+#
+# Same reconnect behaviour as Reading Mode, plus a sleep lock: the Kindle is
+# kept awake so the Bluetooth link is not dropped by suspend.
+#
+# - The lock is short (BTK_LOCK_TIMEOUT) and renewed every BTK_TICK seconds, so
+#   it can never outlive this script by more than a few minutes.
+# - Below THRESHOLD % (and not charging) the lock is released and the Kindle may
+#   sleep again; it resumes by itself once charging starts or the battery has
+#   recovered to THRESHOLD + 5 %. Reconnecting keeps working meanwhile.
 
-# Always-On Mode
+BTK_BASE="${BTK_BASE:-$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)}"
+. "$BTK_BASE/lib/common.sh"
+BTK_TAG="always-on"
+BTK_HOLD_LOCK=1
 
-COMMON="/mnt/us/btkeepalive/bin/common.sh"
-[ -f "$COMMON" ] && . "$COMMON"
+lock_loop() {
+  _state=active
+  renew_lock
+  while :; do
+    BATT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null)
+    CHARGING=$(lipc-get-prop com.lab126.powerd isCharging 2>/dev/null)
+    case "$_state" in
+      active)
+        if is_number "$BATT" && [ "$BATT" -lt "$THRESHOLD" ] && [ "$CHARGING" != "1" ]; then
+          release_lock
+          _state=low
+          log "battery at ${BATT}% (< ${THRESHOLD}%), sleep prevention released"
+          set_status "battery low (${BATT}%): sleep allowed, reconnect still active"
+          notify "Battery at ${BATT}%:${NL}Always On paused, the Kindle may sleep.${NL}It resumes when charging."
+        else
+          renew_lock
+        fi
+        ;;
+      low)
+        if [ "$CHARGING" = "1" ] || { is_number "$BATT" && [ "$BATT" -ge $(( THRESHOLD + 5 )) ]; }; then
+          _state=active
+          clear_status
+          renew_lock
+          log "battery ok again (${BATT}%, charging=${CHARGING}), sleep prevention resumed"
+        fi
+        ;;
+    esac
+    nap "$BTK_TICK"
+  done
+}
 
-CONF_FILE="/mnt/us/btkeepalive/btkeepalive.conf"
-if [ -f "$CONF_FILE" ]; then
-  . "$CONF_FILE"
-else
-  notify "BT Keepalive" "Config file missing. Copy btkeepalive.conf to /mnt/us/btkeepalive/"
-  exit 0
-fi
+trap 'exit 0' TERM INT HUP
+trap btk_cleanup EXIT
 
-LOGFILE="${LOGFILE:-/mnt/us/btkeepalive/log/btkeepalive.log}"
-mkdir -p "$(dirname "$LOGFILE")"
-rotate_log "$LOGFILE" 256
+require_config
+log "started (v$BTK_VERSION), threshold=${THRESHOLD}%"
 
-if ! validate_mac "$MAC"; then
-  echo "$(date) - [always-on] error: MAC address '$MAC' invalid or not configured" >> "$LOGFILE"
-  notify "BT Keepalive" "Device MAC not configured. Use 'Get MAC Address' and edit btkeepalive.conf."
-  exit 0
-fi
+lock_loop &
+LOCK_PID=$!
 
-echo "$(date) - [always-on] mode started (target: $MAC)" >> "$LOGFILE"
-
-# Listen for Bluetooth disconnect events without spawning grep subshells
-lipc-wait-event -m com.lab126.btfd "*" | while read -r EVENT; do
-  case "$EVENT" in
-    *Disconnect_Result*)
-      echo "$(date) - [always-on] disconnect detected, reconnecting..." >> "$LOGFILE"
-      reconnect "$MAC" &
-      ;;
-  esac
-done &
-WAIT_PID=$!
-
-# Trap for graceful shutdown on EXIT, SIGINT, or SIGTERM
-trap 'kill $WAIT_PID 2>/dev/null; lipc-set-prop com.lab126.powerd deferSuspend 0 2>/dev/null; echo "$(date) - [always-on] sleep deferral released" >> "$LOGFILE"; exit 0' EXIT INT TERM
-
-# Initial connection attempt with retry backoff
-reconnect "$MAC" &
-
-# Always-on loop: renew a 900s (15 min) suspend deferral every 300s (5 min)
-# If script crashes or is killed ungracefully, Kindle sleeps in max 15 minutes
-while :; do
-  lipc-set-prop com.lab126.powerd deferSuspend 900 2>/dev/null
-
-  BATT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null)
-  CHARGING=$(lipc-get-prop com.lab126.powerd isCharging 2>/dev/null)
-  if [ -n "$BATT" ] && [ "$BATT" -lt "${THRESHOLD:-20}" ] 2>/dev/null && [ "$CHARGING" != "1" ] 2>/dev/null; then
-    echo "$(date) - [always-on] battery low (${BATT}%), stopping keepalive to conserve power" >> "$LOGFILE"
-    lipc-set-prop com.lab126.powerd deferSuspend 0 2>/dev/null
-    initctl stop btkeepalive 2>/dev/null
-    exit 0
-  fi
-  sleep 300
-done
+supervise_listener

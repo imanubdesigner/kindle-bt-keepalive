@@ -1,36 +1,10 @@
 #!/bin/sh
-# Show current BT Keepalive mode via Pillow notification
+# Show the current mode, and whether it is really running.
 
-COMMON="/mnt/us/btkeepalive/bin/common.sh"
-[ -f "$COMMON" ] && . "$COMMON" || . "$(dirname "$0")/../../btkeepalive/bin/common.sh"
-
-if [ ! -f "$CONFIG_FILE" ]; then
-  notify "BT Keepalive" "Current Mode: Disabled (Not configured yet)"
-  exit 0
+BTK_BASE="${BTK_BASE:-/mnt/us/btkeepalive}"
+if [ ! -f "$BTK_BASE/lib/common.sh" ]; then
+  lipc-set-prop com.lab126.pillow pillowAlert '{"clientParams":{"alertId":"appAlert1","show":true,"customStrings":[{"matchStr":"alertTitle","replaceStr":"BT Keepalive"},{"matchStr":"alertText","replaceStr":"btkeepalive folder not found. Copy it to /mnt/us/"}]}}' 2>/dev/null
+  exit 1
 fi
-
-read -r MODE < "$CONFIG_FILE"
-
-STATUS=""
-if is_service_running; then
-  STATUS=" (Active)"
-else
-  [ "$MODE" != "default" ] && STATUS=" (Stopped)"
-fi
-
-case "$MODE" in
-  "reading")
-    MSG="Reading Mode$STATUS"
-    ;;
-  "always-on")
-    MSG="Always On Mode$STATUS"
-    ;;
-  "default")
-    MSG="Disabled (Default Mode)"
-    ;;
-  *)
-    MSG="Unknown ($MODE)"
-    ;;
-esac
-
-notify "BT Keepalive" "Current Mode: $MSG"
+. "$BTK_BASE/lib/common.sh"
+notify "$(status_text)"

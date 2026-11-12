@@ -3,6 +3,9 @@ local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 
+local BASE = "/mnt/us/btkeepalive"
+local EXT = "/mnt/us/extensions/btkeepalive"
+
 local BTKeepalive = WidgetContainer:extend{
     name = "btkeepalive",
     is_doc_only = false,
@@ -37,130 +40,121 @@ function BTKeepalive:addToMainMenu(menu_items)
                 text = _("Default (Disable)"),
                 callback = function() self:setDefault() end,
             },
+            {
+                text = _("Diagnostics"),
+                callback = function() self:showDiagnostics() end,
+            },
         },
     }
 end
 
+-- Runs a command and returns its trimmed output ("" if it cannot be run).
+local function capture(cmd)
+    local p = io.popen(cmd .. " 2>/dev/null")
+    if not p then return "" end
+    local out = p:read("*a") or ""
+    p:close()
+    return (out:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function fileExists(path)
+    local f = io.open(path, "r")
+    if f then f:close() return true end
+    return false
+end
+
+-- The shell scripts hold all the logic (shared with the KUAL menu), so KOReader
+-- and KUAL always behave the same.
+local function needInstalled(script)
+    if fileExists(script) then return true end
+    UIManager:show(InfoMessage:new{
+        text = _("Script not found:\n") .. script
+            .. _("\nCopy the btkeepalive and extensions folders to /mnt/us/."),
+    })
+    return false
+end
+
 function BTKeepalive:getMACAddress()
-    local f = io.open("/var/local/zbluetooth/bt_config.conf", "r")
-    if not f then
+    local script = BASE .. "/bin/paired.sh"
+    if not needInstalled(script) then return end
+    local out = capture("/bin/sh " .. script)
+    if out == "" then
         UIManager:show(InfoMessage:new{
             text = _("No paired devices found.\nPair via Settings → Bluetooth first."),
         })
         return
     end
-
-    local macs = {}
-    local names = {}
-    local current_mac
-
-    for line in f:lines() do
-        local mac = line:match("^%[([0-9a-fA-F:]+)%]$")
-        if mac then
-            current_mac = mac
-            table.insert(macs, mac)
-            names[current_mac] = nil -- Reset name for this section
-        elseif current_mac then
-            local name = line:match("^Name%s*=%s*(.+)$")
-            if name and not names[current_mac] then
-                -- Sanitize quotes and control characters
-                names[current_mac] = name:gsub('["\\]', ""):sub(1, 30)
-            end
-        end
-    end
-    f:close()
-
-    if #macs == 0 then
-        UIManager:show(InfoMessage:new{
-            text = _("No paired devices found."),
-        })
-        return
-    end
-
-    local start = math.max(1, #macs - 2)
-    local lines = {}
-    for i = start, #macs do
-        local mac = macs[i]
-        local name = names[mac]
-        if name and name ~= "" then
-            table.insert(lines, mac .. " (" .. name .. ")")
-        else
-            table.insert(lines, mac)
-        end
-    end
-
     UIManager:show(InfoMessage:new{
-        text = _("Paired Bluetooth Devices:\n\n") .. table.concat(lines, "\n"),
+        text = _("Paired Bluetooth Devices:\n\n") .. out,
     })
 end
 
 function BTKeepalive:getCurrentMode()
-    local f = io.open("/mnt/us/btkeepalive/config.conf", "r")
-    if not f then
-        UIManager:show(InfoMessage:new{
-            text = _("Current Mode: Disabled (Not configured yet)\nSelect Reading Mode or Always On to activate."),
-            timeout = 3,
-        })
-        return
-    end
-
-    local mode = f:read("*l")
-    f:close()
-
-    local is_running = os.execute("pgrep -f btconnect.sh >/dev/null 2>&1") == 0
-    local status_suffix = ""
-    if is_running then
-        status_suffix = _(" (Active)")
-    elseif mode ~= "default" then
-        status_suffix = _(" (Stopped)")
-    end
-
-    local mode_map = {
-        reading = _("Reading Mode") .. status_suffix,
-        ["always-on"] = _("Always On Mode") .. status_suffix,
-        default = _("Default (Disabled)"),
-    }
-    local display = mode_map[mode]
-
+    local script = BASE .. "/bin/status.sh"
+    if not needInstalled(script) then return end
+    local out = capture("/bin/sh " .. script)
     UIManager:show(InfoMessage:new{
-        text = _("Current Mode: ") .. (display or _("Unknown")),
-        timeout = 3,
+        text = (out ~= "" and out) or _("Unknown"),
+        timeout = 5,
     })
 end
 
 function BTKeepalive:setReadingMode()
-    self:runShell("/mnt/us/extensions/btkeepalive/set_reading.sh", _("Reading Mode enabled"))
+    self:runShell(EXT .. "/set_reading.sh",
+        _("Reading Mode enabled\nReconnects after each drop.\nThe Kindle sleeps normally."))
 end
 
 function BTKeepalive:setAlwaysOn()
-    self:runShell("/mnt/us/extensions/btkeepalive/set_always_on.sh", _("Always On Mode enabled"))
+    self:runShell(EXT .. "/set_always_on.sh",
+        _("Always On enabled\nKeeps the Kindle awake and\nreconnects after each drop."))
 end
 
 function BTKeepalive:setDefault()
-    self:runShell("/mnt/us/extensions/btkeepalive/set_default.sh", _("Disabled (default mode)"))
+    self:runShell(EXT .. "/set_default.sh", _("Disabled (default mode)"))
 end
 
+-- Runs a mode switch. Shows a "please wait" box first (the scripts need a few
+-- seconds and os.execute blocks the UI) and reports the real outcome.
 function BTKeepalive:runShell(script, msg)
-    local f = io.open(script, "r")
-    if not f then
+    if not needInstalled(script) then return end
+
+    local wait = InfoMessage:new{ text = _("Please wait…") }
+    UIManager:show(wait)
+    UIManager:forceRePaint()
+
+    local ok = os.execute("/bin/sh " .. script .. " >/dev/null 2>&1")
+    -- LuaJIT returns the exit status, Lua 5.2+ returns true/nil.
+    local success = (ok == 0) or (ok == true)
+
+    UIManager:close(wait)
+
+    if not success then
         UIManager:show(InfoMessage:new{
-            text = _("Script not found:\n") .. script,
+            text = _("Could not switch mode.\nSee /mnt/us/btkeepalive/log/wrapper.log"),
         })
         return
     end
-    f:close()
 
-    local res = os.execute("/bin/sh " .. script .. " 2>/dev/null")
-    if res == 0 or res == true then
-        UIManager:show(InfoMessage:new{
-            text = msg,
-            timeout = 3,
+    -- Append anything worth knowing (e.g. "waiting: MAC address not set").
+    local status = capture("/bin/sh " .. BASE .. "/bin/status.sh")
+    local extra = status:match("\n(.+)$")
+    if extra then msg = msg .. "\n\n" .. extra end
+
+    UIManager:show(InfoMessage:new{ text = msg, timeout = 4 })
+end
+
+function BTKeepalive:showDiagnostics()
+    local script = BASE .. "/bin/diagnose.sh"
+    if not needInstalled(script) then return end
+    local out = capture("/bin/sh " .. script)
+    local ok, TextViewer = pcall(require, "ui/widget/textviewer")
+    if ok and TextViewer then
+        UIManager:show(TextViewer:new{
+            title = _("BT Keepalive diagnostics"),
+            text = out,
         })
     else
-        UIManager:show(InfoMessage:new{
-            text = _("Notice: executed ") .. script,
-            timeout = 3,
-        })
+        UIManager:show(InfoMessage:new{ text = out })
     end
 end
 
